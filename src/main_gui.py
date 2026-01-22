@@ -93,7 +93,7 @@ def launch_interface() -> None:
             return 'Repositories cannot be empty'
         repos = [r.strip() for r in value.splitlines() if r.strip()]
         for repo in repos:
-            if not re.match(r'^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\/[a-zA-Z0-9_.-]+$', repo):
+            if not re.match(r'^[a-zA-Z0-9\-]+\/[a-zA-Z0-9_\.-]+$', repo):
                 return f'Invalid repository format: {repo}'
         return None
 
@@ -105,7 +105,7 @@ def launch_interface() -> None:
         token_map = [t.strip() for t in value.splitlines() if t.strip()]
         for token in token_map:
             # Allow single token (no colon) or owner:token pairs
-            if not re.match(r'^[a-zA-Z0-9_]+$|^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*:[a-zA-Z0-9_]+$', token):
+            if not re.match(r'^[a-zA-Z0-9_]+$|^[a-zA-Z0-9\-]+:[a-zA-Z0-9_]+$', token):
                 return f'Invalid token or owner:token format: {token}'
         return None
 
