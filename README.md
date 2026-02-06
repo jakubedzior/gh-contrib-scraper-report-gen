@@ -24,6 +24,8 @@ The `run` script is a helper that automates the installation of dependencies and
 
 > __NOTE__: On Linux, you might need to make the script executable first by running: `chmod +x run.sh`
 
+> __NOTE__: On **WSL** (Windows Subsystem for Linux), if the repo lives on a Windows drive (e.g. `/mnt/d/...`), `run.sh` may have Windows line endings (CRLF) and fail with errors like `$'\r': command not found`. Fix it by converting to LF: `sed -i 's/\r$//' run.sh`, or run explicitly with: `bash run.sh gui`. New clones will get correct line endings if you have the repo’s `.gitattributes` (it forces `*.sh` to LF).
+
 ## Manual installation (alternatively)
 
 1. Clone this repository or download the ZIP.
