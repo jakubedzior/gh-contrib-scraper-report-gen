@@ -70,6 +70,7 @@ class GitHubAPI:
     def fetch_repo_commit_records(
         self, repo: Repository, username: str, since: datetime,
         include_merge_commits: bool = False, exclude_pr_merge_commits: bool = False,
+        sha: str | None = None,
     ) -> list[CommitRecord]:
         """Fetch all commit records for a repository, with optional filters.
 
@@ -79,13 +80,15 @@ class GitHubAPI:
             since: Only commits after this date
             include_merge_commits: Whether to include merge commits
             exclude_pr_merge_commits: Whether to exclude PR merge commits
+            sha: Branch name or commit SHA to list commits from; None uses repo default branch
 
         Returns:
             List of commit records matching the criteria
         """
-        log.info('Fetching direct commits by %s in %s since %s', username, repo.full_name, since.isoformat())
+        branch_info = f' on {sha}' if sha else ''
+        log.info('Fetching direct commits by %s in %s%s since %s', username, repo.full_name, branch_info, since.isoformat())
         try:
-            commits: list[Commit] = list(repo.get_commits(author=username, since=since))
+            commits: list[Commit] = list(repo.get_commits(author=username, since=since, sha=sha))
             if not include_merge_commits:
                 commits = [c for c in commits if len(c.parents) <= 1]
             if exclude_pr_merge_commits:
@@ -281,7 +284,9 @@ def fetch_repositories(apis: dict[str, GitHubAPI], repos_by_owner: dict[str, lis
 
 
 def process_commits_and_prs(
-    repos: list[Repository], apis: dict[str, GitHubAPI], username: str, since_date: datetime, fetch_pr_commits: bool, include_merge_commits: bool
+    repos: list[Repository], apis: dict[str, GitHubAPI], username: str, since_date: datetime,
+    fetch_pr_commits: bool, include_merge_commits: bool,
+    branches: list[str] | None = None,
 ) -> list[CommitRecord]:
     """Process commits and pull requests for the given repositories using appropriate API clients.
 
@@ -292,6 +297,7 @@ def process_commits_and_prs(
         since_date: Date to filter commits and PRs.
         fetch_pr_commits: Whether to include PR commits.
         include_merge_commits: Whether to include merge commits.
+        branches: Optional list of branch names to scrape; None or empty means default branch only.
 
     Returns:
         Lists of direct commit records and PR commit records. Exits if an API client is missing.
@@ -318,11 +324,23 @@ def process_commits_and_prs(
         api_client = get_api_for_repo(repo)
         log.info("Processing repository: %s with API for owner %s", repo.full_name, repo.owner.login.lower())
 
-        # Fetch direct commits
-        commits = api_client.fetch_repo_commit_records(
-            repo, username, since_date,
-            include_merge_commits=include_merge_commits, exclude_pr_merge_commits=fetch_pr_commits)
-        all_commit_records.extend(commits)
+        # Fetch direct commits (default branch only, or each specified branch)
+        branch_list: list[str] | None = branches if branches else None
+        if not branch_list:
+            commits = api_client.fetch_repo_commit_records(
+                repo, username, since_date,
+                include_merge_commits=include_merge_commits, exclude_pr_merge_commits=fetch_pr_commits,
+                sha=None,
+            )
+            all_commit_records.extend(commits)
+        else:
+            for branch in branch_list:
+                commits = api_client.fetch_repo_commit_records(
+                    repo, username, since_date,
+                    include_merge_commits=include_merge_commits, exclude_pr_merge_commits=fetch_pr_commits,
+                    sha=branch,
+                )
+                all_commit_records.extend(commits)
 
         # Fetch PRs if requested (only need to do this once per repo)
         if fetch_pr_commits:

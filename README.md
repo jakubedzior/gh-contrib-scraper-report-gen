@@ -141,7 +141,9 @@ This will launch the GUI in your browser at __<http://localhost:8080/>__ and gui
 python -m src.main <username> --since "YYYY-MM-DD" `
   [--token "your_token_or_map_of_tokens"] `
   [--repositories "owner1/repo1,owner2/repo2"] `
-  [--output OUTPUT] [--ca-bundle CA_BUNDLE_PATH] [--no-verify-ssl] [--fetch-pr-commits] [--include-merge-commits] `
+  [--branches "main,develop"] `
+  [--output OUTPUT] [--ca-bundle CA_BUNDLE_PATH] [--no-verify-ssl] `
+  [--fetch-pr-commits] [--include-merge-commits] `
   [--commit-fields date url message sha stats files_changed] `
   [--report-formats markdown text json] `
   [--limit-download-diffs LIMIT_OF_FILES LIMIT_LINES_CHANGED]
@@ -156,6 +158,8 @@ python -m src.main <username> --since "YYYY-MM-DD" `
 - __--token__: GitHub Personal Access Token or a map of owner tokens (can also be set via environment variable)
 
 - __--repositories__: Comma-separated list of repositories (can also be set via environment variable)
+
+- __--branches__: Comma-separated list of branch names to scrape (e.g. `main,develop`). If omitted, only each repository's default branch is scraped. Can also be set via `GITHUB_BRANCHES` environment variable.
 
 - __--output__: Output directory for the results (default: `output/`)
 
@@ -252,6 +256,8 @@ The `metadata.json` file contains metadata about the query, including:
 - List of repositories
 
 - Start date (`since`)
+
+- Branches (when `--branches` was used)
 
 ### Commit Diffs
 

@@ -60,6 +60,20 @@ def parse_repo_list(repos_str: str) -> list[str]:
     return [repo.strip() for repo in repos_str.split(',') if repo.strip()]
 
 
+def parse_branch_list(branches_str: str) -> list[str]:
+    """Parse a comma-separated list of branch names.
+
+    Args:
+        branches_str: Comma-separated string of branch names
+
+    Returns:
+        List of branch names (empty if input is empty/whitespace)
+    """
+    if not branches_str or not branches_str.strip():
+        return []
+    return [b.strip() for b in branches_str.split(',') if b.strip()]
+
+
 def parse_date(date_str: str) -> datetime:
     """Parse a date string into a datetime object.
 
@@ -128,6 +142,7 @@ def main() -> None:
     parser.add_argument('--since', required=True, help='Only include contributions after this date (YYYY-MM-DD, YYYY-MM-DD HH:MM:SS or YYYY-MM-DDTHH:MM:SS)')
     parser.add_argument('--token', help='GitHub Personal Access Token or a map of owner tokens (comma-separated format: owner:token,owner2:token2)')
     parser.add_argument('--repositories', help='Comma-separated list of repositories (format: owner/repo)')
+    parser.add_argument('--branches', help='Comma-separated list of branch names to scrape (default: repository default branch only)')
     parser.add_argument('--output', default='output', help='Output directory')
     parser.add_argument('--ca-bundle', help='Path to SSL CA bundle file')
     parser.add_argument('--no-verify-ssl', action='store_true', help='Disable SSL verification (not recommended)')
@@ -187,11 +202,15 @@ def main() -> None:
     # Group repositories by owner
     repos_by_owner = group_repos_by_owner(repo_full_names)
 
+    # Parse branches (optional)
+    branches_str = args.branches or os.environ.get('GITHUB_BRANCHES', '')
+    branches: list[str] = parse_branch_list(branches_str)
+
     # Create output tree and save metadata
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     output_path = os.path.join(args.output, timestamp)
     os.makedirs(output_path, exist_ok=True)
-    save_metadata(output_path, args.username, repo_full_names, since_date)
+    save_metadata(output_path, args.username, repo_full_names, since_date, branches=branches if branches else None)
 
     # Fetch repositories
     repos = fetch_repositories(apis, repos_by_owner)
@@ -202,6 +221,7 @@ def main() -> None:
     # Process commits and PRs
     all_unique_commit_records = process_commits_and_prs(
         repos, apis, args.username, since_date, args.fetch_pr_commits, args.include_merge_commits,
+        branches=branches if branches else None,
     )
 
     if not all_unique_commit_records:

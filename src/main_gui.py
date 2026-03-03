@@ -19,6 +19,7 @@ def launch_interface() -> None:
     GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
 
     proc_ref: dict[str, subprocess.Popen | None] = {'proc': None}
+    branches_input = None  # Assigned when building form below; used in run_tool
 
     async def run_tool() -> None:
         if proc_ref['proc'] is not None:
@@ -34,6 +35,8 @@ def launch_interface() -> None:
             username.value, '--since', since.value,
             '--output', output_dir.value,
         ]
+        if branches_input and branches_input.value and branches_input.value.strip():
+            cmd.extend(['--branches', branches_input.value.strip()])
         if commit_fields.value:
             cmd.extend(['--commit-fields'] + commit_fields.value)
         if report_formats.value:
@@ -176,6 +179,10 @@ def launch_interface() -> None:
             ).style('width: 100%').props('autocorrect=off').props('spellcheck=false')
             since = ui.input('Since Date (YYYY-MM-DD)', validation=validate_date, value=f'{datetime.now().strftime("%Y-%m-01")}')\
                 .style('width: 100%')
+            branches_input = ui.input(
+                'Branches (comma-separated; leave empty for default branch only)',
+                placeholder='e.g. main, develop',
+            ).style('width: 100%').props('autocorrect=off').props('spellcheck=false')
 
             commit_fields = ui.select(
                 ['date', 'url', 'message', 'sha', 'stats', 'files_changed'],
